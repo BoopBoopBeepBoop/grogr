@@ -1,14 +1,14 @@
 package grogr
 
-import grogr.core.Expr.{Container, Func, Operator, Reference}
-import grogr.core.{Expr, ExprParser}
+import grogr.core.Expr.{Func, Operator, Reference}
 import grogr.core.Token.{Blend, Cross, Nest}
+import grogr.core.{Expr, StandardRewrite}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 class TestExpr extends AnyFunSpec with Matchers {
 
-  val testExpr =
+  private val testExpr =
     Operator(
       Cross,
       Reference("name1"),
@@ -20,7 +20,7 @@ class TestExpr extends AnyFunSpec with Matchers {
           Reference("name3"),
           Reference("name4"))))
 
-  val testNestedFunctions =
+  private val testNestedFunctions =
     Func(
       "foo",
       Seq(
@@ -60,29 +60,39 @@ class TestExpr extends AnyFunSpec with Matchers {
   }
 
   case class RewriteTestCase(source: String, rewritten: String, terms: Seq[String])
-  def t(source: String, rewritten: String, terms: Seq[String]) = RewriteTestCase(source, rewritten, terms)  
+  def t1(source: String, rewritten: String, terms: Seq[String]): RewriteTestCase = {
+    RewriteTestCase(source, rewritten, terms)
+  }
 
-  val rewrites = Seq(
-    t(
+  private val rewrites = Seq(
+    t1(
       source = "(A + B)/C",
       rewritten = "A / C + B / C",
       terms = Seq("A / C", "B / C")),
-    t(
+    t1(
       source = "A/(B+C)",
       rewritten = "A / B + A / C",
       terms = Seq("A / B", "A / C")),
-    t(
+    t1(
       source = "(A+(B+C))/D",
       rewritten = "A / D + B / D + C / D",
       terms = Seq("A / D", "B / D", "C / D")),
-    t(
+    t1(
       source = "X*(Y+Z)",
       rewritten = "X * Y + X * Z",
       terms = Seq("X * Y", "X * Z")),
-    t(
+    t1(
       source = "(Y+Z)*X",
       rewritten = "Y * X + Z * X",
-      terms = Seq("Y * X", "Z * X"))
+      terms = Seq("Y * X", "Z * X")),
+    t1(
+      source = "((A))",
+      rewritten = "(A)",
+      terms = Seq("A")),
+    t1(
+      source = "((((A))))",
+      rewritten = "(A)",
+      terms = Seq("A"))
   )
 
   for { RewriteTestCase(input, output, terms) <- rewrites } yield {
@@ -92,19 +102,58 @@ class TestExpr extends AnyFunSpec with Matchers {
       symOps.size shouldEqual 1
       val op = symOps.head
 
-      val rewritten = op.rewrite {
-        case Operator(Nest, Container(Operator(Blend, left, right)), term) =>
-          Operator(Blend, Operator(Nest, left, term), Operator(Nest, right, term))
-        case Operator(Nest, term, Container(Operator(Blend, left, right))) =>
-          Operator(Blend, Operator(Nest, term, left), Operator(Nest, term, right))
-        case Operator(Cross, Container(Operator(Blend, left, right)), term) =>
-          Operator(Blend, Operator(Cross, left, term), Operator(Cross, right, term))
-        case Operator(Cross, term, Container(Operator(Blend, left, right))) =>
-          Operator(Blend, Operator(Cross, term, left), Operator(Cross, term, right))
-      }
+      val rewritten = op.rewrite(StandardRewrite.prelimRules)
 
       Expr.format(rewritten) shouldEqual output
       rewritten.terms.map(Expr.format) shouldEqual terms
+    }
+  }
+
+  case class FactorTestCase(source: String, termCount: Int, maxFactor: Int, last: String)
+  def t2(source: String, termCount: Int, maxFactor: Int, last: String): FactorTestCase = {
+    FactorTestCase(source, termCount, maxFactor, last)
+  }
+
+  private val factorAndTermTests = Seq(
+    t2(
+      source = "G+(A+B)*C/D",
+      termCount = 3,
+      maxFactor = 2,
+      last = "G * 1 + A * C / D + B * C / D"
+    ),
+    t2(
+      source = "A1*A2*A3*A4 + B",
+      termCount = 2,
+      maxFactor = 4,
+      last = "A1 * A2 * A3 * A4 + B * 1 * 1 * 1"
+    ),
+    t2(
+      source = "A1*A2*A3*A4 + (B + A)/Q",
+      termCount = 3,
+      maxFactor = 4,
+      last = "A1 * A2 * A3 * A4 + B / Q * 1 * 1 * 1 + A / Q * 1 * 1 * 1"
+    )
+  )
+
+  for { FactorTestCase(input, termCount, maxFactor, last) <- factorAndTermTests } yield {
+    it(s"factors [$input] -> [$termCount/$maxFactor]") {
+      val expr = Expr(input)
+      val op = expr.getSymOpExpressions.head
+
+      val rewritten = op.rewrite(StandardRewrite.prelimRules)
+      println(s"Rewrite: $input -> ${Expr.format(rewritten)(Expr.FormatOptions(showOperatorBrackets = true))}")
+      withClue("term count") {
+        println("Terms: " + rewritten.terms)
+        rewritten.terms.size shouldEqual termCount
+      }
+      withClue("max factor") {
+          println("Factors: " + rewritten.terms.map(_.factors.mkString(", ")).mkString(" | "))
+          rewritten.terms.map(_.factors.size).max shouldEqual maxFactor
+      }
+      val unityRules = StandardRewrite.unityRules(rewritten)
+      val rewritten2 = rewritten.rewrite(unityRules)
+
+      Expr.format(rewritten2) shouldEqual last
     }
   }
 }
