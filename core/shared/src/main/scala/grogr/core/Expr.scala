@@ -38,16 +38,32 @@ sealed trait Expr {
   }
 }
 
-object Expr {
+case class AlgebraicForm private [core] (symOp: SymOp)
+
+object Expr extends Logging {
   def apply(str: String): Expr = {
     val Lexer.Success(out, _) = Lexer(str)
     val ExprParser.Success(out2, _) = ExprParser(out)
+    logger.debug(s"Expression parsed [$str]")
     out2
   }
 
   sealed trait SymOp extends Expr {
     def isTerm: Boolean = findAny { case Operator(Blend, _, _) => false }
     def isFactor: Boolean = findAny { case Operator(Cross, _, _) => false }
+
+    def toAlgebraicForm: AlgebraicForm = {
+      logger.debug(s"Rewriting expression to algebraic form")
+
+      val rewritten = this.rewrite(StandardRewrite.prelimRules)
+      logger.trace(s"Rewrite phase 1 [${Expr.format(rewritten)}]")
+
+      val unityRules = StandardRewrite.unityRules(rewritten)
+      val rewritten2 = rewritten.rewrite(unityRules)
+      logger.trace(s"Rewrite phase 2 [${Expr.format(rewritten2)}]")
+
+      AlgebraicForm(rewritten2)
+    }
 
     lazy val factors: Seq[SymOp] = {
       this match {
@@ -104,9 +120,7 @@ object Expr {
 
   case class Func(name: String, arguments: Seq[Expr]) extends Expr
   case class Container(sub: SymOp) extends SymOp
-  case class Operator(`type`: OperatorToken, left: SymOp, right: SymOp) extends SymOp {
-
-  }
+  case class Operator(`type`: OperatorToken, left: SymOp, right: SymOp) extends SymOp
 
   case class FormatOptions(showOperatorBrackets: Boolean = false)
 

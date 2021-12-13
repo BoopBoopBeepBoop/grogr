@@ -50,7 +50,6 @@ object StandardRewrite {
             case op if op == in && !alreadyReplaced =>
               alreadyReplaced = true
               val unityCrossesRequired = largestOrder - op.factors.size
-              println(s"Unity crosses: $unityCrossesRequired")
               (1 to unityCrossesRequired).foldLeft(op) { case (acc, _) =>
                 Operator(Cross, acc, Unity)
               }

@@ -5,7 +5,7 @@ import grogr.core.Token._
 
 import scala.util.parsing.combinator.Parsers
 
-object ExprParser extends Parsers {
+object ExprParser extends Parsers with Logging {
   override type Elem = Token
 
   private def identifier: Parser[Identifier] = {
