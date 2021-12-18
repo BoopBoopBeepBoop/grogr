@@ -1,30 +1,45 @@
+import Dependencies._
+
+/*
+ ╔════════════════════╗
+ ║   Common Settings  ║
+ ╚════════════════════╝
+*/
 
 name := "grogr"
+
 val commonSettings = Seq(
-  scalaVersion := "3.1.0"
+  scalaVersion := "3.1.0",
+  Test / fork := true
 )
+
+/*
+ ╔════════════════════╗
+ ║ Project Definition ║
+ ╚════════════════════╝
+*/
 
 lazy val root = (project in file("."))
   .settings(commonSettings)
-  .aggregate(app, core.js, core.jvm, sql)
+  .aggregate(app, core.js, core.jvm, engine.js, engine.jvm, server)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(
-      "org.scala-lang.modules" %%% "scala-parser-combinators" % "2.1.0",
-      "com.lihaoyi" %%% "sourcecode" % "0.2.7",
-      "org.scalactic" %%% "scalactic" % "3.2.10",
-      "org.scalatest" %%% "scalatest" % "3.2.10" % "test"
-    )
+    libraryDependencies ++= parsingDeps.value ++ sharedUtilDeps.value ++ testDeps.value
   ).jvmSettings(
-    libraryDependencies ++= Seq(
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
-      "ch.qos.logback" % "logback-classic" % "1.2.3",
-      "org.codehaus.janino" % "janino" % "3.1.6"
-    ),
-    Test / fork := true
+    libraryDependencies ++= jvmLoggingDeps.value
   )
+
+lazy val engine = crossProject(JSPlatform, JVMPlatform).in(file("engine"))
+  .settings(
+    commonSettings,
+    libraryDependencies ++= httpDeps.value ++ testDeps.value
+  )
+  .jvmSettings(
+    libraryDependencies ++= jvmHttpDeps.value
+  )
+  .dependsOn(core)
 
 lazy val app = (project in file("app"))
   .enablePlugins(ScalaJSPlugin)
@@ -33,7 +48,19 @@ lazy val app = (project in file("app"))
     // This is an application with a main method
     scalaJSUseMainModuleInitializer := true,
     mainClass := Some("tutorial.webapp.TutorialApp"),
-    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "2.0.0"
+    libraryDependencies ++= domDeps.value
   )
 
-lazy val sql = (project in file("sql"))
+
+lazy val server = (project in file("server"))
+  .enablePlugins(JavaServerAppPackaging, DockerPlugin, DockerComposePlugin)
+  .settings(
+    commonSettings,
+    mainClass := Some("grogr.server.Application"),
+    run / fork := true,
+    libraryDependencies ++= webserverDeps.value,
+
+    dockerBaseImage := "openjdk:17",
+    dockerUpdateLatest := true,
+    Docker / packageName := "grogr/server"
+  )
