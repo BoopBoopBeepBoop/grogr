@@ -1,4 +1,5 @@
 import Dependencies._
+import sbt.Test
 
 /*
  ╔════════════════════╗
@@ -9,7 +10,10 @@ import Dependencies._
 name := "grogr"
 
 val commonSettings = Seq(
-  scalaVersion := "3.1.0",
+  scalaVersion := "3.1.0"
+)
+
+val jvmCommonSettings = Seq(
   Test / fork := true
 )
 
@@ -21,15 +25,38 @@ val commonSettings = Seq(
 
 lazy val root = (project in file("."))
   .settings(commonSettings)
-  .aggregate(app, core.js, core.jvm, engine.js, engine.jvm, server)
+  .aggregate(app, core.js, core.jvm, engine.js, engine.jvm, server, driver)
 
 lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
   .settings(
     commonSettings,
     libraryDependencies ++= parsingDeps.value ++ sharedUtilDeps.value ++ testDeps.value
   ).jvmSettings(
+    jvmCommonSettings,
     libraryDependencies ++= jvmLoggingDeps.value
   )
+
+lazy val driver = (project in file("driver"))
+  .settings(commonSettings)
+  .aggregate(clickhouseDriver, grogrDriver.js, grogrDriver.jvm)
+
+lazy val clickhouseDriver = (project in (file("driver") / "clickhouse"))
+  .settings(
+    commonSettings,
+    jvmCommonSettings,
+    libraryDependencies ++= httpDeps.value ++ jvmHttpDeps.value ++ sharedUtilDeps.value ++ testDeps.value
+  ).dependsOn(core.jvm)
+
+lazy val grogrDriver = crossProject(JSPlatform, JVMPlatform).in(file("driver") / "grogr")
+  .settings(
+    commonSettings,
+    libraryDependencies ++= httpDeps.value ++ testDeps.value
+  )
+  .jvmSettings(
+    jvmCommonSettings,
+    libraryDependencies ++= jvmHttpDeps.value
+  )
+  .dependsOn(core)
 
 lazy val engine = crossProject(JSPlatform, JVMPlatform).in(file("engine"))
   .settings(
@@ -37,6 +64,7 @@ lazy val engine = crossProject(JSPlatform, JVMPlatform).in(file("engine"))
     libraryDependencies ++= httpDeps.value ++ testDeps.value
   )
   .jvmSettings(
+    jvmCommonSettings,
     libraryDependencies ++= jvmHttpDeps.value
   )
   .dependsOn(core)
@@ -51,13 +79,14 @@ lazy val app = (project in file("app"))
     libraryDependencies ++= domDeps.value
   )
 
-
 lazy val server = (project in file("server"))
   .enablePlugins(JavaServerAppPackaging, DockerPlugin, DockerComposePlugin)
   .settings(
     commonSettings,
+    jvmCommonSettings,
     mainClass := Some("grogr.server.Application"),
     run / fork := true,
+    Test / fork := true,
     libraryDependencies ++= webserverDeps.value,
 
     dockerBaseImage := "openjdk:17",

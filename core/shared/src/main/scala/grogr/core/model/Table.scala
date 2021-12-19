@@ -16,8 +16,8 @@ case class Table(name: String, columns: Seq[Column]) {
     s"Table[name: $name, columns: [${columns.mkString(", ")}]]"
   }
 }
-case class Column(name: String) {
-  override def toString = name
+case class Column(name: String, `type`: String) {
+  override def toString = s"""$name/${`type`}"""
 }
 case class Relation(name1: String, col1: String, name2: String, col2: String) {
   override def toString = {

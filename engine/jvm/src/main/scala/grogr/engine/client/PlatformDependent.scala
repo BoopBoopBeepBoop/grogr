@@ -7,4 +7,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object PlatformDependent {
   lazy val defaultBackend = HttpClientFutureBackend()
+
+  def executionContext = scala.concurrent.ExecutionContext.Implicits.global
 }

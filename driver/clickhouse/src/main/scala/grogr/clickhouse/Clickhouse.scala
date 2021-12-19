@@ -1,21 +1,27 @@
-package grogr.engine.client
+package grogr.clickhouse
 
-import grogr.engine.client.Clickhouse.Result
+import grogr.core.Driver.Validation.RemoteConnectionFailure
+import grogr.core.{Driver, Logging}
+import sttp.client3.httpclient.HttpClientFutureBackend
 import sttp.client3.{SttpBackend, *}
 import sttp.model.Uri
 import upickle.default.{macroRW, ReadWriter as RW}
 import upickle.implicits.key
 import upickle.default as upickle
+import cats.data.{EitherT, Validated}
+import cats.data.Validated.*
+import grogr.clickhouse.Clickhouse.Result
 
 import java.lang.Package
 import scala.concurrent.{ExecutionContext, Future}
 
 object Clickhouse extends App {
-  def apply(base: Uri, backend: SttpBackend[Future, _])(using exec: ExecutionContext) = {
+  def apply(
+      base: Uri,
+      backend: SttpBackend[Future, _] = HttpClientFutureBackend())(
+      using exec: ExecutionContext
+  ) = {
     new ClickhouseClient(base, backend)
-  }
-  def apply(base: Uri)(using exec: ExecutionContext) = {
-    new ClickhouseClient(base, PlatformDependent.defaultBackend)
   }
 
   case class Result(
@@ -61,10 +67,17 @@ object Clickhouse extends App {
 
 }
 
-class ClickhouseClient(base: Uri, backend: SttpBackend[Future, _])(using exec: ExecutionContext) {
+class ClickhouseClient(base: Uri, backend: SttpBackend[Future, _])(using exec: ExecutionContext) extends Logging {
   import Clickhouse.Protocol.given
 
-  def query(stmt: String) = {
+  def test(): Driver.ValidationResult[ClickhouseClient] = {
+    EitherT(
+      query("select 1 format JSON")
+        .map(_ => Right(this))
+        .recover { case e => Left(RemoteConnectionFailure(base.toString, e)) })
+  }
+
+  def query(stmt: String): Future[Result] = {
     val req = basicRequest.get(uri"$base?query=$stmt")
     req.send(backend).map(_.body match {
       case Right(resp) => upickle.read[Result](resp)

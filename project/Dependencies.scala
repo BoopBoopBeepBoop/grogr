@@ -4,6 +4,7 @@ import sbt._
 
 object Dependencies {
   val caskVersion = "0.8.0"
+  val catsVersion = "2.7.0"
   val janinoVersion = "3.1.6"
   val logbackVersion = "1.2.3"
   val parserVersion = "2.1.0"
@@ -24,8 +25,9 @@ object Dependencies {
     "org.scala-lang.modules" %%% "scala-parser-combinators" % parserVersion
   ))
   val sharedUtilDeps = Def.setting(Seq(
+    "org.typelevel" %%% "cats-core" % catsVersion,
     "com.lihaoyi" %%% "sourcecode" % sourceCodeVersion,
-    "com.lihaoyi" %% "upickle" % uPickleVersion
+    "com.lihaoyi" %%% "upickle" % uPickleVersion
   ))
   val testDeps = Def.setting(Seq(
     "org.scalactic" %%% "scalactic" % scalatestVersion % "test",

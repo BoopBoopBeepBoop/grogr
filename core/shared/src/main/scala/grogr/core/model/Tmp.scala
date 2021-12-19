@@ -1,5 +1,7 @@
 package grogr.core.model
 
+import scala.reflect.ClassTag
+
 trait QueryAST {
   type Table = String
   type Schema = Vector[String]
