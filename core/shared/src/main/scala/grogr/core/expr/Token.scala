@@ -1,4 +1,4 @@
-package grogr.core
+package grogr.core.expr
 
 import scala.util.parsing.input.{NoPosition, Position, Reader}
 

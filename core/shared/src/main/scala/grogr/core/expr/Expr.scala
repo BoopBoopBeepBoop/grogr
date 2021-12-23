@@ -1,7 +1,8 @@
-package grogr.core
+package grogr.core.expr
 
-import grogr.core.Expr.{Container, Func, Operator, Reference, SymOp, Unity}
-import grogr.core.Token.{Blend, Cross, Nest, OperatorToken}
+import grogr.core.expr.Token.{Blend, Cross, Nest, OperatorToken}
+import grogr.core.expr.Expr.*
+import grogr.core.Logging
 
 
 sealed trait Expr {

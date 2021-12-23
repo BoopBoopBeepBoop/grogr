@@ -1,9 +1,12 @@
-package grogr.core
+package grogr.core.expr
 
-import scala.util.parsing.combinator._
+import grogr.core.expr.Token
+import grogr.core.expr.Token.*
+
+import scala.util.parsing.combinator.RegexParsers
 
 object Lexer extends RegexParsers {
-  import Token._
+
 
   override def skipWhitespace = true
 
@@ -19,6 +22,7 @@ object Lexer extends RegexParsers {
   def cross = "*" ^^ (_ => Cross)
   def nest = "/" ^^ (_ => Nest)
   def blend = "+" ^^ (_ => Blend)
+
   def operator = cross | nest | blend
 
   def tokens: Parser[List[Token]] = {
@@ -29,8 +33,3 @@ object Lexer extends RegexParsers {
     this.parseAll(tokens, str)
   }
 }
-
-
-
-
-

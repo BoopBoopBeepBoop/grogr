@@ -1,7 +1,10 @@
-package grogr.core
+package grogr.core.expr
 
-import grogr.core.Expr._
-import grogr.core.Token._
+import grogr.core.expr.Token.*
+import grogr.core.expr.{Expr, Token}
+import grogr.core.expr.Expr.*
+import grogr.core.Logging
+import grogr.core.expr.Expr.Reference
 
 import scala.util.parsing.combinator.Parsers
 
@@ -9,7 +12,7 @@ object ExprParser extends Parsers with Logging {
   override type Elem = Token
 
   private def identifier: Parser[Identifier] = {
-    accept("identifier", { case id @ Identifier(name) => id })
+    accept("identifier", { case id@Identifier(name) => id })
   }
 
   def reference = identifier ^^ { case Identifier(name) => Reference(name) }

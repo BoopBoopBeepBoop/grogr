@@ -1,7 +1,8 @@
-package grogr.core
+package grogr.core.expr
 
-import grogr.core.Expr.{Container, Operator, SymOp, Unity}
-import grogr.core.Token.{Blend, Cross, Nest}
+import grogr.core.expr.Token.*
+import grogr.core.expr.Expr.{SymOp, Operator, Container, Unity}
+
 
 object StandardRewrite {
   val prelimRules: PartialFunction[SymOp, SymOp] = {
@@ -25,9 +26,9 @@ object StandardRewrite {
     case Operator(Cross, term, Container(Operator(Blend, left, right))) =>
       Operator(Blend, Operator(Cross, term, left), Operator(Cross, term, right))
 
-    case Operator(Nest, left, Operator(other@(Cross|Blend) , left1, right)) =>
+    case Operator(Nest, left, Operator(other@(Cross | Blend), left1, right)) =>
       Operator(other, Operator(Nest, left, left1), right)
-    case Operator(Nest, Operator(other@(Cross|Blend), left, right1), right) =>
+    case Operator(Nest, Operator(other@(Cross | Blend), left, right1), right) =>
       Operator(Nest, left, Operator(other, right1, right))
 
     case Operator(Cross, left, Operator(Blend, left1, right)) =>
