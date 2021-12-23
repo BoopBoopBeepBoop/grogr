@@ -1,9 +1,10 @@
 package grogr.core
 
 import cats.data.EitherT
-import cats.implicits._
+import cats.implicits.*
 import grogr.core.Driver.Validation.MissingArgument
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 trait Driver {
@@ -40,6 +41,7 @@ trait Connection {
 }
 
 trait Session {
+  def id: UUID
   def schema: model.Schema
 }
 
