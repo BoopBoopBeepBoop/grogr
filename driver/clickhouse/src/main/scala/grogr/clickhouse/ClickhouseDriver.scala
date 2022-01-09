@@ -64,7 +64,7 @@ class ClickhouseConnection(client: ClickhouseClient) extends Connection {
         })
 
         // TODO: no relations stored in clickhouse, figure that out later
-        tablesf.map { tables => model.Schema(tables, relations = Nil) }
+        tablesf.map { tables => model.Schema("default", tables, relations = Nil) }
       }
     }
 

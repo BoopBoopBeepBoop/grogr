@@ -54,7 +54,11 @@ class TestClickhouseDriver extends AsyncFunSpecLike with Matchers {
       } yield session.schema
 
     connect.toNested.value.collect {
-      case Right(schema) => schema.tables.size shouldEqual 1
+      case Right(schema) =>
+        println(schema)
+        println(schema.indexed)
+        schema.tables.size shouldEqual 6
+
       case Left(other) => fail(other.toString)
     }
   }

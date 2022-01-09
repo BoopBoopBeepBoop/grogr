@@ -15,7 +15,16 @@ object ExprParser extends Parsers with Logging {
     accept("identifier", { case id@Identifier(name) => id })
   }
 
-  def reference = identifier ^^ { case Identifier(name) => Reference(name) }
+  def reference = {
+    identifier ~ rep(Period ~ identifier) ^^ {
+      case Identifier(name) ~ list =>
+        (name :: list.map(_._2.str)) match {
+          case one :: Nil => Reference(one)
+          case one :: two :: Nil => Reference(two, table = Some(one))
+          case one :: two :: three :: Nil => Reference(three, table = Some(two), schema = Some(one))
+        }
+    }
+  }
 
   def fullId: Parser[String] = {
     identifier ~ rep(Period ~ identifier) ^^ {
@@ -54,6 +63,12 @@ object ExprParser extends Parsers with Logging {
 
   def apply(tokens: List[Token]) = {
     val reader = new Token.TokenReader(tokens)
-    full(reader)
+    full(reader) match {
+      case Success(res, n) =>
+        if (!n.atEnd) throw new RuntimeException(s"Parser had unused tokens after reading: $res")
+        res
+      case Failure(msg, n) => throw new RuntimeException("Parser failed: " + msg)
+      case Error(msg, n) => throw new RuntimeException("Parser error: " + msg)
+    }
   }
 }
