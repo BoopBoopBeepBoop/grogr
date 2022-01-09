@@ -8,6 +8,7 @@ import grogr.core.{Connection, Driver, Session, model}
 import grogr.core.Arguments.arg
 import sttp.model.Uri
 
+import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 
 
@@ -63,13 +64,13 @@ class ClickhouseConnection(client: ClickhouseClient) extends Connection {
         })
 
         // TODO: no relations stored in clickhouse, figure that out later
-        tablesf.map { tables => model.Schema(tables, relations = Nil) }
+        tablesf.map { tables => model.Schema("default", tables, relations = Nil) }
       }
     }
 
-    EitherT(getSchema.map(s => Right(new ClickhouseSession(s))))
+    EitherT(getSchema.map(s => Right(new ClickhouseSession(UUID.randomUUID(), s))))
   }
 }
 
-class ClickhouseSession(val schema: model.Schema) extends Session {
+class ClickhouseSession(val id: UUID, val schema: model.Schema) extends Session {
 }

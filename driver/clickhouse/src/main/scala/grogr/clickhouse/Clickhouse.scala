@@ -84,6 +84,14 @@ class ClickhouseClient(base: Uri, backend: SttpBackend[Future, _])(using exec: E
       case Left(foo) => throw new RuntimeException(foo)
     })
   }
+
+  def statement(stmt: String): Future[String] = {
+    val req = basicRequest.post(uri"$base?query=$stmt")
+    req.send(backend).map(_.body match {
+      case Right(resp) => resp
+      case Left(foo) => throw new RuntimeException(foo)
+    })
+  }
 }
 
 

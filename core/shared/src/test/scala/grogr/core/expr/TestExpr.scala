@@ -1,8 +1,9 @@
-package grogr
+package grogr.core.expr
 
-import grogr.core.Expr.{Func, Operator, Reference}
-import grogr.core.Token.{Blend, Cross, Nest}
-import grogr.core.{Expr, StandardRewrite}
+import grogr.core.expr.StandardRewrite
+import grogr.core.expr.Token.{Blend, Cross, Nest}
+import grogr.core.expr.Expr.{Func, Operator, Reference}
+import grogr.core.expr.{Expr, StandardRewrite}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 

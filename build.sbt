@@ -30,7 +30,7 @@ lazy val root = (project in file("."))
 lazy val core = crossProject(JSPlatform, JVMPlatform).in(file("core"))
   .settings(
     commonSettings,
-    libraryDependencies ++= parsingDeps.value ++ sharedUtilDeps.value ++ testDeps.value
+    libraryDependencies ++= parseAndSqlDeps.value ++ sharedUtilDeps.value ++ testDeps.value
   ).jvmSettings(
     jvmCommonSettings,
     libraryDependencies ++= jvmLoggingDeps.value
@@ -93,3 +93,4 @@ lazy val server = (project in file("server"))
     dockerUpdateLatest := true,
     Docker / packageName := "grogr/server"
   )
+  .dependsOn(core.jvm, engine.jvm, clickhouseDriver)

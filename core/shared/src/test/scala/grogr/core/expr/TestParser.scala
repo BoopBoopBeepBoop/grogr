@@ -1,9 +1,10 @@
-package grogr
+package grogr.core.expr
 
+import grogr.core.expr.Lexer
+import grogr.core.expr.Token.*
+import grogr.core.expr.Expr.{Container, Func, Operator, Reference}
+import grogr.core.expr.{ExprParser, Lexer}
 import org.scalatest.funspec.AnyFunSpec
-import grogr.core.Token._
-import grogr.core.Expr.{Container, Func, Operator, Reference}
-import grogr.core.{Expr, ExprParser, Lexer}
 import org.scalatest.matchers.should.Matchers
 
 class TestParser extends AnyFunSpec with Matchers {

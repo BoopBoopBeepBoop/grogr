@@ -1,7 +1,8 @@
-package grogr.core
+package grogr.core.expr
 
-import grogr.core.Expr.{Container, Func, Operator, Reference, SymOp, Unity}
-import grogr.core.Token.{Blend, Cross, Nest, OperatorToken}
+import grogr.core.expr.Token.{Blend, Cross, Nest, OperatorToken}
+import grogr.core.expr.Expr.*
+import grogr.core.Logging
 
 
 sealed trait Expr {
@@ -43,7 +44,7 @@ case class AlgebraicForm private [core] (symOp: SymOp)
 object Expr extends Logging {
   def apply(str: String): Expr = {
     val Lexer.Success(out, _) = Lexer(str)
-    val ExprParser.Success(out2, _) = ExprParser(out)
+    val out2 = ExprParser(out)
     logger.debug(s"Expression parsed [$str]")
     out2
   }
@@ -115,7 +116,7 @@ object Expr extends Logging {
   }
 
   sealed trait Symbol extends SymOp
-  case class Reference(value: String) extends Symbol
+  case class Reference(value: String, table: Option[String] = None, schema: Option[String] = None) extends Symbol
   case object Unity extends Symbol
 
   case class Func(name: String, arguments: Seq[Expr]) extends Expr
@@ -130,7 +131,7 @@ object Expr extends Logging {
     case Operator(Cross, l, r) => wrap(s"${format(l)} * ${format(r)}")
     case Operator(Nest, l, r) => wrap(s"${format(l)} / ${format(r)}")
     case Operator(Blend, l, r) => wrap(s"${format(l)} + ${format(r)}")
-    case Reference(str) => str
+    case Reference(str, table, schema) => Seq(table, schema, Some(str)).flatten.mkString(".")
     case Unity => "1"
   }
 

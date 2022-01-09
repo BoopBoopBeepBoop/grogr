@@ -14,6 +14,7 @@ object Dependencies {
   val sourceCodeVersion = "0.2.7"
   val sttpVersion = "3.3.18"
   val uPickleVersion = "1.4.3"
+  val vizsqlVersion = "1.1.0-SNAPSHOT"
 
   // The following lines are all defined as inline settings to accommodate %%%,
   // which will not be resolved until used in the crossproject scope
@@ -21,8 +22,9 @@ object Dependencies {
   val domDeps = Def.setting(Seq(
     "org.scala-js" %%% "scalajs-dom" % scalaDomVersion
   ))
-  val parsingDeps = Def.setting(Seq(
-    "org.scala-lang.modules" %%% "scala-parser-combinators" % parserVersion
+  val parseAndSqlDeps = Def.setting(Seq(
+    "org.scala-lang.modules" %%% "scala-parser-combinators" % parserVersion,
+    "com.criteo" %%% "vizsql" % vizsqlVersion
   ))
   val sharedUtilDeps = Def.setting(Seq(
     "org.typelevel" %%% "cats-core" % catsVersion,
