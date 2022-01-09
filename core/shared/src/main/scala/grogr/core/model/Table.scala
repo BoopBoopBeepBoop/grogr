@@ -57,6 +57,53 @@ class IndexedSchema(s: Schema) {
     s.relations.foreach { rel => g(rel.name1).link(rel.col1, g(rel.name2) -> rel.col2) }
   }
 
+  private val canonicalNames = {
+    var seq = 0
+    var currentMapping = Map.empty[Int, Set[(String, String)]]
+    var colToMapping = Map.empty[(String, String), Int]
+
+    s.tables
+      .flatMap { t => g(t).links.map((_, t.name)) }
+      .foreach { case (link, sourceTableName) =>
+        val tup1 = (sourceTableName, link.source)
+        val tup2 = (link.destNode.value.name, link.dest)
+
+        val group1 = colToMapping.get(tup1)
+        val group2 = colToMapping.get(tup2)
+
+        (group1, group2) match {
+          // neither are in group. Add both to a new one
+          case (None, None) =>
+            val newGroup = seq
+            seq += 1
+            colToMapping += tup1 -> newGroup
+            colToMapping += tup2 -> newGroup
+            currentMapping += newGroup -> Set(tup1, tup2)
+
+          // if one is already in a group, add the other to it
+          case (Some(g1), None) =>
+            colToMapping += tup2 -> g1
+            currentMapping += g1 -> (currentMapping(g1) + tup2)
+          case (None, Some(g2)) =>
+            colToMapping += tup1 -> g2
+            currentMapping += g2 -> (currentMapping(g2) + tup1)
+
+          // if both are in groups, merge them
+          case (Some(g1), Some(g2)) =>
+            val groupToMergeDown = currentMapping(g2)
+            colToMapping ++= groupToMergeDown.map(_ -> g1).toMap
+            currentMapping += (g1 -> (currentMapping(g1) ++ groupToMergeDown))
+        }
+      }
+
+    // pick a canonical name for each group of variables
+    val canonical = currentMapping.map { case (k, v) => k -> v.head }
+    // finally build tuple -> tuple for the canonical names
+    val provisional = colToMapping.map { case (tup, group) => tup -> canonical(group) }
+    // and drop any canonical names from the set, so they do not return a replacement
+    provisional -- canonical.map { case (_, value) => value }
+  }
+
   val db = {
     val nullable = true
     val colTypeMapper = vz.Type.from(nullable).orElse {
@@ -76,8 +123,12 @@ class IndexedSchema(s: Schema) {
     vz.DB(vz.sql99.dialect, vz.Schemas(List(vz.Schema(s.name, vzTables.toList))))
   }
 
+  def canonicalName(table: String, column: String): Option[(String, String)] = {
+    canonicalNames.get((table -> column))
+  }
+
   def relationCols(table: Table): Set[Column] = {
-    _relatable(table.name)
+    _relatable.getOrElse(table.name, Set.empty)
   }
 
   def findJoin(t1: Set[Table], t2: Set[Table]): Option[Seq[(Table, String, Table, String)]] = {

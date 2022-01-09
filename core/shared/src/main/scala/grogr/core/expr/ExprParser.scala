@@ -15,6 +15,12 @@ object ExprParser extends Parsers with Logging {
     accept("identifier", { case id@Identifier(name) => id })
   }
 
+  def unity = {
+    ExplicitUnity ^^ {
+      case _ => Unity
+    }
+  }
+
   def reference = {
     identifier ~ rep(Period ~ identifier) ^^ {
       case Identifier(name) ~ list =>
@@ -47,7 +53,7 @@ object ExprParser extends Parsers with Logging {
   }
 
   def exprBlock2: Parser[SymOp] = {
-    val block = (parenthesized | reference) ~ rep(operator ~ exprBlock2) ^^ {
+    val block = (parenthesized | reference | unity) ~ rep(operator ~ exprBlock2) ^^ {
       case left ~ tail =>
         tail.foldLeft[SymOp](left) {
           case (t1, op ~ t2) =>

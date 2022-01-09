@@ -5,6 +5,7 @@ import scala.util.parsing.input.{NoPosition, Position, Reader}
 sealed trait Token
 case object Token {
   case class Identifier(str: String) extends Token
+  case object ExplicitUnity extends Token
   case object ParenOpen extends Token
   case object ParenClose extends Token
   case object Period extends Token
